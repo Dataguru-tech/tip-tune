@@ -1,22 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TipsService } from './tips.service';
 import { TipsController } from './tips.controller';
-import { Tip } from './entities/tip.entity';
-import { Artist } from '../artists/entities/artist.entity';
-import { Track } from '../tracks/entities/track.entity';
+import { TipsService } from './tips.service';
+import { Tip } from './tips.entity';
 import { StellarModule } from '../stellar/stellar.module';
-import { ArtistsModule } from '../artists/artists.module';
-import { TracksModule } from '../tracks/tracks.module';
-import { WebSocketModule } from '../websocket/websocket.module';
+import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Tip, Artist, Track]),
+    TypeOrmModule.forFeature([Tip]),
     StellarModule,
-    ArtistsModule,
-    TracksModule,
-    WebSocketModule,
+    UsersModule,
+    NotificationsModule,
   ],
   controllers: [TipsController],
   providers: [TipsService],

@@ -1,231 +1,71 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Server from '@stellar/stellar-sdk';
-import { 
-  Transaction, 
-  Networks,
-  Asset,
-  Account,
-  Keypair
-} from '@stellar/stellar-sdk';
-
-export interface StellarTransactionDetails {
-  hash: string;
-  sourceAccount: string;
-  destinationAccount: string;
-  amount: string;
-  asset: string;
-  memo?: string;
-  timestamp: Date;
-  successful: boolean;
-}
-
-export interface TransactionVerificationResult {
-  valid: boolean;
-  details?: StellarTransactionDetails;
-  error?: string;
-}
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 @Injectable()
 export class StellarService {
+  private server: StellarSdk.Horizon.Server;
   private readonly logger = new Logger(StellarService.name);
-  private readonly server: any;
-  private readonly networkPassphrase: string;
 
   constructor(private configService: ConfigService) {
-    const horizonUrl = this.configService.get<string>('STELLAR_HORIZON_URL') || 'https://horizon-testnet.stellar.org';
-    this.networkPassphrase = this.configService.get<string>('STELLAR_NETWORK_PASSPHRASE') || Networks.TESTNET;
-    
-    this.server = new Server(horizonUrl);
-    this.logger.log(`Stellar service initialized with horizon: ${horizonUrl}`);
+    const network = this.configService.get<string>('STELLAR_NETWORK', 'testnet');
+    const horizonUrl =
+      network === 'mainnet'
+        ? 'https://horizon.stellar.org'
+        : 'https://horizon-testnet.stellar.org';
+
+    this.server = new StellarSdk.Horizon.Server(horizonUrl);
   }
 
-  /**
-   * Verify a Stellar transaction on the blockchain
-   */
-  async verifyTransaction(transactionHash: string): Promise<TransactionVerificationResult> {
+  async verifyTransaction(
+    txHash: string,
+    amount: string,
+    recipientId: string,
+  ): Promise<boolean> {
     try {
-      this.logger.log(`Verifying Stellar transaction: ${transactionHash}`);
-      
-      // Get transaction from Stellar network
-      const horizonResponse = await this.server.transactions()
-        .transaction(transactionHash)
-        .call();
+      const tx = await this.server.transactions().transaction(txHash).call();
 
-      if (!horizonResponse.successful) {
-        return {
-          valid: false,
-          error: 'Transaction was not successful on Stellar network'
-        };
+      if (!tx.successful) {
+        this.logger.warn(`Transaction ${txHash} was not successful`);
+        return false;
       }
 
-      // Parse transaction envelope to extract details
-      const transaction = new Transaction(horizonResponse.envelope_xdr, this.networkPassphrase);
-      
-      // Extract payment operations
-      const paymentOperations = transaction.operations
-        .filter(op => op.type === 'payment')
-        .map(op => ({
-          destination: (op as any).destination,
-          amount: (op as any).amount,
-          asset: (op as any).asset instanceof Asset 
-            ? (op as any).asset.code 
-            : 'XLM',
-        }));
+      // Check if the transaction is recent (optional, but good practice to prevent replay of old txs)
+      // For now, we rely on the database uniqueness constraint on txHash.
 
-      if (paymentOperations.length === 0) {
-        return {
-          valid: false,
-          error: 'No payment operations found in transaction'
-        };
+      // We need to inspect operations to ensure the correct amount was sent to the correct recipient
+      const operations = await tx.operations();
+      
+      const paymentOp = operations.records.find(
+        (op) =>
+          op.type === 'payment' &&
+          op.to === recipientId &&
+          op.amount === amount, // Note: exact string match. 
+          // Better to use a BigNumber library or StellarSdk's handling if precision is key, 
+          // but for now string comparison matches API.
+      );
+
+      if (!paymentOp) {
+        this.logger.warn(
+          `Transaction ${txHash} does not contain a valid payment operation to ${recipientId} for ${amount}`,
+        );
+        return false;
       }
 
-      // For simplicity, we'll use the first payment operation
-      const payment = paymentOperations[0];
-      
-      const details: StellarTransactionDetails = {
-        hash: horizonResponse.hash,
-        sourceAccount: transaction.source,
-        destinationAccount: payment.destination,
-        amount: payment.amount,
-        asset: payment.asset,
-        memo: transaction.memo?.value?.toString(),
-        timestamp: new Date(horizonResponse.created_at),
-        successful: horizonResponse.successful,
-      };
-
-      this.logger.log(`Transaction verified successfully: ${transactionHash}`);
-      
-      return {
-        valid: true,
-        details,
-      };
-
-    } catch (error) {
-      this.logger.error(`Failed to verify transaction ${transactionHash}: ${error.message}`);
-      
-      if (error.response?.status === 404) {
-        return {
-          valid: false,
-          error: 'Transaction not found on Stellar network'
-        };
-      }
-
-      return {
-        valid: false,
-        error: `Failed to verify transaction: ${error.message}`
-      };
-    }
-  }
-
-  /**
-   * Get account information from Stellar
-   */
-  async getAccount(accountId: string): Promise<Account> {
-    try {
-      const account = await this.server.accounts().accountId(accountId).call();
-      return new Account(account.account_id, account.sequence);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        throw new NotFoundException(`Stellar account ${accountId} not found`);
-      }
-      throw new BadRequestException(`Failed to get account: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get transaction history for an account
-   */
-  async getAccountTransactions(accountId: string, limit: number = 10): Promise<any[]> {
-    try {
-      const transactions = await this.server
-        .transactions()
-        .forAccount(accountId)
-        .limit(limit)
-        .order('desc')
-        .call();
-
-      return transactions.records;
-    } catch (error) {
-      this.logger.error(`Failed to get transactions for account ${accountId}: ${error.message}`);
-      throw new BadRequestException(`Failed to get transaction history: ${error.message}`);
-    }
-  }
-
-  /**
-   * Validate Stellar address format
-   */
-  validateStellarAddress(address: string): boolean {
-    try {
-      Keypair.fromPublicKey(address);
       return true;
     } catch (error) {
+      this.logger.error(`Error verifying transaction ${txHash}: ${error.message}`);
       return false;
     }
   }
 
-  /**
-   * Get current network information
-   */
-  async getNetworkInfo(): Promise<any> {
+  async getTransactionDetails(txHash: string) {
     try {
-      const friendbot = this.configService.get<string>('STELLAR_FRIENDBOT_URL');
-      if (friendbot) {
-        // Testnet friendbot is available
-        return { network: 'testnet', friendbot: true };
-      }
-      
-      // Check if we can reach horizon
-      await this.server.root().call();
-      return { network: this.networkPassphrase === Networks.TESTNET ? 'testnet' : 'public' };
+      const tx = await this.server.transactions().transaction(txHash).call();
+      return tx;
     } catch (error) {
-      throw new BadRequestException(`Unable to connect to Stellar network: ${error.message}`);
+      this.logger.error(`Error fetching transaction ${txHash}: ${error.message}`);
+      throw error;
     }
-  }
-
-  /**
-   * Get asset information
-   */
-  async getAssetInfo(assetCode: string, issuer?: string): Promise<any> {
-    try {
-      const asset = issuer 
-        ? new Asset(assetCode, issuer)
-        : Asset.native();
-
-      // For native XLM, we don't need to query
-      if (asset.isNative()) {
-        return {
-          asset_code: 'XLM',
-          asset_issuer: null,
-          asset_type: 'native'
-        };
-      }
-
-      // For custom assets, we could query balances or other info
-      // This is a placeholder for more complex asset management
-      return {
-        asset_code: assetCode,
-        asset_issuer: issuer,
-        asset_type: 'credit_alphanum4'
-      };
-    } catch (error) {
-      throw new BadRequestException(`Invalid asset: ${error.message}`);
-    }
-  }
-
-  /**
-   * Format amount from stroops to XLM
-   */
-  formatAmount(stroops: string): string {
-    const amount = parseFloat(stroops) / 10000000; // 1 XLM = 10^7 stroops
-    return amount.toFixed(7);
-  }
-
-  /**
-   * Convert amount to stroops
-   */
-  toStroops(amount: string): string {
-    const xlm = parseFloat(amount);
-    return (xlm * 10000000).toString();
   }
 }
