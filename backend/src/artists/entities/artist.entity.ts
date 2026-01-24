@@ -6,19 +6,22 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
-} from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+  OneToMany,
+} from "typeorm";
+import { User } from "../../users/entities/user.entity";
+import { Track } from "@/tracks/entities/track.entity";
+import { Tip } from "@/tips/tips.entity";
 
-@Entity('artists')
+@Entity("artists")
 export class Artist {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @OneToOne(() => User, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
   user: User;
 
-  @Column({ type: 'uuid', unique: true })
+  @Column({ type: "uuid", unique: true })
   userId: string;
 
   @Column()
@@ -27,11 +30,17 @@ export class Artist {
   @Column()
   genre: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   bio: string;
 
   @Column({ nullable: true })
   profileImage: string;
+
+  @OneToMany(() => Track, (track) => track.artist)
+  tracks: Track[];
+
+  @OneToMany(() => Tip, (tip) => tip.toArtist)
+  tips: Tip[];
 
   @Column({ nullable: true })
   coverImage: string;
@@ -39,7 +48,7 @@ export class Artist {
   @Column()
   walletAddress: string; // Stellar public key
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: "decimal", precision: 18, scale: 2, default: 0 })
   totalTipsReceived: string;
 
   @Column({ default: true })

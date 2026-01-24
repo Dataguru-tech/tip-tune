@@ -2,25 +2,25 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Artist } from './entities/artist.entity';
-import { CreateArtistDto } from './dto/create-artist.dto';
-import { UpdateArtistDto } from './dto/update-artist.dto';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Artist } from "./entities/artist.entity";
+import { CreateArtistDto } from "./dto/create-artist.dto";
+import { UpdateArtistDto } from "./dto/update-artist.dto";
 
 @Injectable()
 export class ArtistsService {
   constructor(
     @InjectRepository(Artist)
-    private readonly artistRepo: Repository<Artist>,
+    private readonly artistRepo: Repository<Artist>
   ) {}
 
   async create(userId: string, dto: CreateArtistDto): Promise<Artist> {
     const existing = await this.artistRepo.findOne({ where: { userId } });
 
     if (existing) {
-      throw new BadRequestException('Artist profile already exists');
+      throw new BadRequestException("Artist profile already exists");
     }
 
     const artist = this.artistRepo.create({
@@ -47,16 +47,13 @@ export class ArtistsService {
     const artist = await this.artistRepo.findOne({ where: { userId } });
 
     if (!artist) {
-      throw new NotFoundException('Artist profile not found');
+      throw new NotFoundException("Artist profile not found");
     }
 
     return artist;
   }
 
-  async update(
-    userId: string,
-    dto: UpdateArtistDto,
-  ): Promise<Artist> {
+  async update(userId: string, dto: UpdateArtistDto): Promise<Artist> {
     const artist = await this.findByUser(userId);
     Object.assign(artist, dto);
     return this.artistRepo.save(artist);

@@ -1,17 +1,26 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Artist } from '../../artists/entities/artist.entity';
-import { Tip } from '../../tips/entities/tip.entity';
-import { TrackGenre } from '../../genres/entities/track-genre.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from "typeorm";
+import { Artist } from "../../artists/entities/artist.entity";
+import { Tip } from "../../tips/entities/tip.entity";
+import { TrackGenre } from "../../genres/entities/track-genre.entity";
 
-@Entity('tracks')
+@Entity("tracks")
 export class Track {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({ length: 255 })
   title: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: "int" })
   duration: number; // in seconds
 
   @Column({ length: 500 })
@@ -23,16 +32,16 @@ export class Track {
   @Column({ length: 100, nullable: true })
   genre: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   releaseDate: Date;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: "int", default: 0 })
   plays: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
   totalTips: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: "int", default: 0 })
   tipCount: number;
 
   @Column({ length: 255, nullable: true })
@@ -44,13 +53,13 @@ export class Track {
   @Column({ length: 500, nullable: true })
   streamingUrl: string;
 
-  @Column({ type: 'bigint', nullable: true })
+  @Column({ type: "bigint", nullable: true })
   fileSize: bigint;
 
   @Column({ length: 100, nullable: true })
   mimeType: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   description: string;
 
   @Column({ length: 255, nullable: true })
@@ -59,14 +68,14 @@ export class Track {
   @Column({ default: false })
   isPublic: boolean;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: "uuid", nullable: true })
   artistId: string;
 
-  @ManyToOne(() => Artist, artist => artist.tracks, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'artistId' })
+  @ManyToOne(() => Artist, (artist) => artist.tracks, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "artistId" })
   artist: Artist;
 
-  @OneToMany(() => Tip, tip => tip.track)
+  @OneToMany(() => Tip, (tip) => tip.track)
   tips: Tip[];
 
   @OneToMany(() => TrackGenre, (trackGenre) => trackGenre.track)
