@@ -14,6 +14,7 @@ import { PlaylistsModule } from './playlists/playlists.module';
 import { GenresModule } from './genres/genres.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { FollowsModule } from './follows/follows.module';
+import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { FollowsModule } from './follows/follows.module';
     GenresModule,
     ActivitiesModule,
     FollowsModule,
+    LeaderboardsModule,
   ],
   controllers: [],
   providers: [],
