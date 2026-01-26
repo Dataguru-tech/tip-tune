@@ -1,6 +1,7 @@
-export { DashboardStats } from './DashboardStats';
-export { TipsChart } from './TipsChart';
-export { TopTracks } from './TopTracks';
-export { RecentTips } from './RecentTips';
-export { ProfileEdit } from './ProfileEdit';
-export { WalletDisplay } from './WalletDisplay';
+import DashboardStats from './DashboardStats';
+import TipsChart from './TipsChart';
+import TopTracks from './TopTracks';
+import RecentTips from './RecentTips';
+import ProfileEdit from './ProfileEdit';
+
+export { DashboardStats, TipsChart, TopTracks, RecentTips, ProfileEdit };
