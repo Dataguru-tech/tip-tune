@@ -10,6 +10,7 @@ const AppHeader: React.FC = () => {
     { label: 'Home', to: '/' },
     { label: 'Leaderboards', to: '/leaderboards' },
     { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Tip History', to: '/tips/history' },
     { label: 'Analytics', to: '/analytics' },
   ];
 
