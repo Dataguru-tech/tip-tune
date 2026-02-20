@@ -1,61 +1,36 @@
-import type { AnalyticsEvent } from "../types/onboarding";
+export interface TipDataPoint {
+  date: string;
+  amount: number;
+}
 
-const SESSION_ID = Math.random().toString(36).slice(2);
+export interface GenreDistribution {
+  genre: string;
+  value: number;
+  color: string;
+}
 
-export const analytics = {
-  track: ({ event, properties = {} }: AnalyticsEvent) => {
-    const payload = {
-      event,
-      sessionId: SESSION_ID,
-      timestamp: new Date().toISOString(),
-      ...properties,
-    };
-    // In production, replace with real analytics (Segment, Mixpanel, etc.)
-    console.log("[Analytics]", payload);
-    // window.analytics?.track(event, payload);
-  },
+export interface TrackStats {
+  name: string;
+  artist: string;
+  playCount: number;
+  tipAmount: number;
+}
 
-  onboardingStepViewed: (step: string, stepIndex: number) => {
-    analytics.track({
-      event: "Onboarding Step Viewed",
-      properties: { step, stepIndex },
-    });
-  },
+export interface HeatmapData {
+  date: string;
+  count: number;
+}
 
-  onboardingStepCompleted: (
-    step: string,
-    stepIndex: number,
-    timeSpentMs: number,
-  ) => {
-    analytics.track({
-      event: "Onboarding Step Completed",
-      properties: { step, stepIndex, timeSpentMs },
-    });
-  },
+export interface FollowerGrowthPoint {
+  date: string;
+  followers: number;
+}
 
-  onboardingSkipped: (step: string) => {
-    analytics.track({ event: "Onboarding Step Skipped", properties: { step } });
-  },
-
-  onboardingCompleted: (totalTimeMs: number) => {
-    analytics.track({
-      event: "Onboarding Completed",
-      properties: { totalTimeMs },
-    });
-  },
-
-  onboardingDraftSaved: (step: string) => {
-    analytics.track({ event: "Onboarding Draft Saved", properties: { step } });
-  },
-
-  walletConnected: (network: string) => {
-    analytics.track({ event: "Wallet Connected", properties: { network } });
-  },
-
-  trackUploaded: (fileSize: number, fileType: string) => {
-    analytics.track({
-      event: "Track Uploaded",
-      properties: { fileSize, fileType },
-    });
-  },
-};
+export interface LiveTip {
+  id: string;
+  amount: number;
+  userName: string;
+  timestamp: number;
+  x: number;
+  y: number;
+}
