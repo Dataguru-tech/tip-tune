@@ -8,8 +8,9 @@ import {
   UpdateDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { Track } from '../tracks/track.entity';
-import { User } from '../users/user.entity';
+import { Track } from '../tracks/entities/track.entity';
+import { User } from '../users/entities/user.entity';
+import { CommentLike } from './comment-like.entity';
 
 @Entity('comments')
 export class Comment {

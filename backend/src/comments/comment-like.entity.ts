@@ -8,7 +8,7 @@ import {
   Unique,
 } from 'typeorm';
 import { Comment } from './comment.entity';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Entity('comment_likes')
 @Unique(['commentId', 'userId'])
